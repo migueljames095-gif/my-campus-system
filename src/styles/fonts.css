@@ -1,0 +1,12 @@
+/* System Font Stack */
+@font-face {
+  font-family: 'System';
+  font-style: normal;
+  font-weight: 300;
+  font-display: fallback;
+  src: local('Segoe UI'),
+       local('Roboto'),
+       local('Ubuntu'),
+       local('Cantarell'),
+       local('Noto Sans');
+}
