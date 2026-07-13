@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Network Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial; background:#0f172a; color:white; margin:0; padding:0; }
+    
+    /* Header */
+    header { background:#1e293b; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    header h1 { margin:0; font-size:24px; }
+    .header-right { display:flex; gap:15px; align-items:center; }
+    .user-btn { background:#3b82f6; padding:8px 15px; border:none; border-radius:5px; color:white; cursor:pointer; font-weight:bold; }
+    .user-btn:hover { background:#2563eb; }
+    .btn-success { background:#22c55e !important; }
+    .btn-success:hover { background:#16a34a !important; }
+    
+    h1 { text-align:center; }
+    .container { display:flex; flex-wrap:wrap; justify-content:center; }
+
+    .card { background:#1e293b; padding:15px; margin:10px; border-radius:10px; width:260px; box-shadow: 0 0 10px rgba(0,0,0,0.3); position:relative; }
+    .card-menu { position:absolute; top:10px; right:10px; }
+    .card-menu button { padding:4px 8px; font-size:14px; background:#1e293b; border:1px solid #334155; }
+    .card-menu button:hover { background:#334155; }
+    .online { color:#22c55e; font-weight:bold; }
+    .offline { color:#ef4444; font-weight:bold; }
+    button { padding:6px 10px; border:none; background:#3b82f6; color:white; border-radius:5px; cursor:pointer; margin-top:5px; }
+    button:hover { background:#2563eb; }
+
+    /* Ticket Tabs */
+    .ticket-tabs { display:flex; gap:10px; margin:20px; border-bottom:2px solid #334155; justify-content:center; }
+    .ticket-tab { background:none; border:none; padding:10px 20px; color:#94a3b8; cursor:pointer; font-weight:bold; font-size:16px; }
+    .ticket-tab.active { color:#22c55e; border-bottom:3px solid #22c55e; margin-bottom:-2px; }
+    .ticket-tab:hover { color:#64748b; }
+
+    /* Ticket Container */
+    .ticket-container { display:none; }
+    .ticket-container.active { display:block; }
+
+    /* Ticket Stats */
+    .ticket-stats { background:#0f172a; padding:15px; margin:10px 20px; border-radius:10px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; }
+    .ticket-stat-item { background:#1e293b; padding:15px; border-radius:5px; text-align:center; }
+    .ticket-stat-number { font-size:32px; font-weight:bold; color:#22c55e; }
+    .ticket-stat-label { font-size:12px; color:#94a3b8; margin-top:5px; }
+
+    /* ===== TICKET CATEGORIES ===== */
+    .ticket-category {
+      margin: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .ticket-category-header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      padding: 15px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: all 0.3s ease;
+      border-left: 5px solid #3b82f6;
+    }
+
+    .ticket-category-header:hover {
+      background: linear-gradient(135deg, #334155 0%, #475569 100%);
+      padding-left: 25px;
+    }
+
+    .ticket-category-header.expanded {
+      border-left: 5px solid #22c55e;
+    }
+
+    .ticket-category-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ticket-category-header.expanded .ticket-category-title {
+      color: #22c55e;
+    }
+
+    .ticket-category-count {
+      background: rgba(59, 130, 246, 0.2);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #3b82f6;
+      font-weight: bold;
+    }
+
+    .ticket-category-header.expanded .ticket-category-count {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .ticket-category-toggle {
+      font-size: 18px;
+      transition: transform 0.3s ease;
+    }
+
+    .ticket-category-header.expanded .ticket-category-toggle {
+      transform: rotate(180deg);
+    }
+
+    .ticket-category-content {
+      display: none;
+      background: #0f172a;
+      padding: 15px;
+    }
+
+    .ticket-category-content.expanded {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .ticket-category-empty {
+      grid-column: 1/-1;
+      text-align: center;
+      color: #94a3b8;
+      padding: 40px 20px;
+    }
+
+    /* Ticket Card */
+    .ticket-card { background:#1e293b; padding:15px; margin:0; border-radius:10px; width:100%; box-shadow: 0 0 10px rgba(0,0,0,0.3); border-left:5px solid #ef4444; }
+    .ticket-card.fixed { border-left:5px solid #22c55e; }
+    .ticket-id { font-size:12px; color:#94a3b8; font-weight:bold; }
+    .ticket-type { font-size:14px; color:#facc15; font-weight:bold; margin:8px 0; }
+    .ticket-status { display:inline-block; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; margin-top:8px; }
+    .ticket-status.open { background:#ef4444; color:white; }
+    .ticket-status.fixed { background:#22c55e; color:white; }
+    .ticket-device { font-size:12px; color:#94a3b8; margin:8px 0; }
+    .ticket-time { font-size:11px; color:#64748b; }
+    .btn-close-ticket { background:#22c55e; padding:6px 12px; font-size:11px; margin-top:10px; width:100%; }
+    .btn-close-ticket:hover { background:#16a34a; }
+
+    /* Login Page */
+    #login { display:none; }
+    #login.show { display:block; }
+    .login-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .login-box {
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      width: 100%;
+      max-width: 400px;
+    }
+    .login-box h2 { text-align: center; margin-top: 0; }
+    .login-box input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .login-box button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+    }
+
+    /* Modal */
+    #modal { display:none; position:fixed; top:5%; left:5%; width:90%; background:#1e293b; padding:20px; border-radius:10px; z-index:1000; max-height:90%; overflow-y:auto; }
+    #modal.show { display:block; }
+    #modal header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    #modal h3 { margin: 0; }
+    #chart { width:100%; height:300px; }
+    .stats { background:#0f172a; padding:15px; margin:10px 0; border-radius:5px; display:grid; grid-template-columns: repeat(2, 1fr); gap:15px; }
+    .stat-item { background:#1e293b; padding:10px; border-radius:5px; }
+    .stat-label { font-size:12px; color:#94a3b8; }
+    .stat-value { font-size:24px; font-weight:bold; color:#22c55e; }
+
+    /* Profile Modal */
+    #profileModal { display:none; position:fixed; top:10%; left:10%; width:80%; background:#1e293b; padding:20px; border-radius:10px; z-index:1000; max-height:80%; overflow-y:auto; }
+    #profileModal.show { display:block; }
+    #profileModal header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .profile-form { max-width:500px; }
+    .profile-tabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid #334155; }
+    .profile-tab { background:none; border:none; padding:10px 15px; color:#94a3b8; cursor:pointer; font-weight:bold; }
+    .profile-tab.active { color:#22c55e; border-bottom:3px solid #22c55e; margin-bottom:-2px; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .form-group { margin:15px 0; }
+    .form-group label { display:block; margin-bottom:5px; font-weight:bold; }
+    .form-group input, .form-group textarea { 
+      width:100%; 
+      padding:10px; 
+      background:#0f172a; 
+      border:1px solid #334155; 
+      color:white; 
+      border-radius:5px;
+      font-family: Arial;
+    }
+    .form-group textarea { resize: vertical; }
+    .btn-group { display:flex; gap:10px; margin-top:20px; }
+    .btn-group button { flex:1; }
+    .btn-danger { background:#ef4444 !important; }
+    .btn-danger:hover { background:#dc2626 !important; }
+    .divider { height:1px; background:#334155; margin:20px 0; }
+    .info-box { background:#0f172a; padding:15px; border-radius:5px; margin:15px 0; border-left:4px solid #facc15; }
+    .error-message { background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; padding:15px; border-radius:5px; margin:15px 0; display:none; }
+    .success-message { background:#064e3b; border:1px solid #22c55e; color:#22c55e; padding:15px; border-radius:5px; margin:15px 0; display:none; }
+
+    /* Add/Edit Device Modal */
+    #addDeviceModal, #editDeviceModal { display:none; position:fixed; top:10%; left:10%; width:80%; background:#1e293b; padding:20px; border-radius:10px; z-index:1000; max-height:80%; overflow-y:auto; }
+    #addDeviceModal.show, #editDeviceModal.show { display:block; }
+    #addDeviceModal header, #editDeviceModal header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .device-form { max-width:600px; }
+    .info-box-device { background:#0f172a; padding:15px; border-radius:5px; margin:15px 0; border-left:4px solid #3b82f6; }
+    .info-box-device h4 { margin-top:0; color:#3b82f6; }
+    .info-box-device code { background:#1e293b; padding:2px 6px; border-radius:3px; color:#22c55e; font-family:monospace; }
+    .success-message-device { background:#064e3b; border:1px solid #22c55e; color:#22c55e; padding:15px; border-radius:5px; margin:15px 0; display:none; }
+    .error-message-device { background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; padding:15px; border-radius:5px; margin:15px 0; display:none; }
+    .info-text { background:#1e293b; padding:10px; border-left:3px solid #facc15; color:#fca5a5; margin:10px 0; border-radius:3px; font-size:12px; }
+    .form-group input:disabled { background:#0a0f1a; color:#64748b; cursor:not-allowed; }
+
+    .close-btn { 
+      background: #ef4444;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .close-btn:hover { background: #dc2626; }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+
+    @media only screen and (max-width: 767px) {
+      header { flex-direction: column; padding:10px; }
+      header h1 { font-size:18px; margin:10px 0; }
+      .header-right { width:100%; flex-direction: column; gap:8px; margin-top:10px; }
+      .user-btn { width:100%; padding:10px; font-size:12px; }
+
+      .card { width:100%; margin:8px 0; }
+      .container { flex-direction: column; }
+
+      #modal, #profileModal, #addDeviceModal, #editDeviceModal { 
+        top:0 !important; 
+        left:0 !important; 
+        width:100% !important; 
+        height:100% !important;
+        border-radius:0;
+        max-height:100%;
+        padding:15px;
+      }
+      
+      #modal header, #profileModal header, #addDeviceModal header, #editDeviceModal header {
+        flex-direction: column;
+        gap:10px;
+      }
+
+      .stats { grid-template-columns: 1fr; }
+      .ticket-stats { grid-template-columns: 1fr; }
+      
+      #chart { height:250px; }
+
+      .form-group input, .form-group textarea { font-size:16px; }
+      .btn-group { flex-direction: column; }
+      .btn-group button { width:100%; }
+      .profile-tabs { flex-direction: column; }
+      .profile-tab { width:100%; text-align:left; border-bottom:none !important; border-left:3px solid #334155; }
+      .profile-tab.active { border-left:3px solid #22c55e; }
+      
+      .ticket-tabs { flex-direction: column; }
+      .ticket-tab { width:100%; text-align:left; border-bottom:none !important; border-left:3px solid #334155; }
+      .ticket-tab.active { border-left:3px solid #22c55e; }
+
+      .ticket-category-content.expanded {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media only screen and (min-width: 768px) and (max-width: 1024px) {
+      header h1 { font-size:20px; }
+      .user-btn { padding:8px 12px; font-size:13px; }
+
+      .card { width:calc(50% - 20px); }
+      .container { justify-content: space-around; }
+
+      #modal, #profileModal, #addDeviceModal, #editDeviceModal { 
+        top:5% !important; 
+        left:5% !important; 
+        width:90% !important;
+      }
+
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .ticket-stats { grid-template-columns: repeat(3, 1fr); }
+      #chart { height:350px; }
+
+      .ticket-category-content.expanded {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media only screen and (min-width: 1025px) {
+      header h1 { font-size:24px; }
+      
+      .card { width:260px; }
+      
+      #modal, #profileModal, #addDeviceModal, #editDeviceModal { 
+        top:5% !important; 
+        left:10% !important; 
+        width:80% !important;
+      }
+
+      .stats { grid-template-columns: repeat(4, 1fr); }
+      .ticket-stats { grid-template-columns: repeat(3, 1fr); }
+      #chart { height:400px; }
+
+      .ticket-category-content.expanded {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      }
+    }
+
+    .device-indicator {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #22c55e;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 10px;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Device Indicator -->
+<div class="device-indicator" id="deviceIndicator">📱 Phone</div>
+
+<!-- Header -->
+<header>
+  <h1>🌐 Network Dashboard</h1>
+  <div class="header-right">
+    <button class="user-btn btn-success" onclick="openAddDeviceModal()" id="addDeviceBtn" style="display:none;">➕ Add Device</button>
+    <button class="user-btn" onclick="openProfileModal()" id="profileBtn" style="display:none;">👤 Profile</button>
+    <button class="user-btn" onclick="logout()" id="logoutBtn" style="display:none;">🚪 Logout</button>
+  </div>
+</header>
+
+<!-- Login Page -->
+<div id="login" class="show">
+  <div class="login-container">
+    <div class="login-box">
+      <h2>🔐 Admin Login</h2>
+      <input id="user" placeholder="Username" onkeypress="if(event.key==='Enter') login()">
+      <input id="pass" type="password" placeholder="Password" onkeypress="if(event.key==='Enter') login()">
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" style="display:none;">
+  <div style="padding:20px;">
+    <h2 style="text-align:center;">📊 Devices Status</h2>
+    <div class="container" id="devices"></div>
+    
+    <h2 style="text-align:center; margin-top:30px;">🎫 Tickets Management</h2>
+    
+    <!-- Ticket Tabs -->
+    <div class="ticket-tabs">
+      <button class="ticket-tab active" onclick="switchTicketTab('generated')">📋 Generated Tickets</button>
+      <button class="ticket-tab" onclick="switchTicketTab('fixed')">✅ Fixed Tickets</button>
+    </div>
+
+    <!-- Generated Tickets (Open) -->
+    <div id="generatedTickets" class="ticket-container active">
+      <div class="ticket-stats">
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="openTicketCount">0</div>
+          <div class="ticket-stat-label">Open Tickets</div>
+        </div>
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="totalProblemCount">0</div>
+          <div class="ticket-stat-label">Problem Types</div>
+        </div>
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="affectedDeviceCount">0</div>
+          <div class="ticket-stat-label">Affected Devices</div>
+        </div>
+      </div>
+      <div id="generatedTicketCategories"></div>
+    </div>
+
+    <!-- Fixed Tickets -->
+    <div id="fixedTickets" class="ticket-container">
+      <div class="ticket-stats">
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="fixedTicketCount">0</div>
+          <div class="ticket-stat-label">Fixed Tickets</div>
+        </div>
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="fixedByUserCount">0</div>
+          <div class="ticket-stat-label">Fixed by Users</div>
+        </div>
+        <div class="ticket-stat-item">
+          <div class="ticket-stat-number" id="avgFixTimeCount">0</div>
+          <div class="ticket-stat-label">Avg Fix Time (h)</div>
+        </div>
+      </div>
+      <div id="fixedTicketCategories"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Device Details Modal -->
+<div id="modal">
+  <header>
+    <h3 id="modalTitle"></h3>
+    <button onclick="closeModal()">✕ Close</button>
+  </header>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-label">Average Latency</div>
+      <div class="stat-value" id="avgLatency">0</div>
+      <div class="stat-label">ms</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Min Latency</div>
+      <div class="stat-value" id="minLatency">0</div>
+      <div class="stat-label">ms</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Max Latency</div>
+      <div class="stat-value" id="maxLatency">0</div>
+      <div class="stat-label">ms</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Data Points</div>
+      <div class="stat-value" id="dataPoints">0</div>
+      <div class="stat-label">recorded</div>
+    </div>
+  </div>
+  <canvas id="chart"></canvas>
+</div>
+
+<!-- Add Device Modal -->
+<div id="addDeviceModal">
+  <header>
+    <h3>➕ Add New ESP32 Device</h3>
+    <button onclick="closeAddDeviceModal()" class="close-btn">✕ Close</button>
+  </header>
+  
+  <div class="device-form">
+    <div class="info-box-device">
+      <h4>📋 Step 1: Register Device</h4>
+      <p>Fill in the device information below:</p>
+    </div>
+
+    <div class="form-group">
+      <label>Device ID *</label>
+      <input type="text" id="deviceId" placeholder="e.g., esp32_2, esp32_office, etc." required>
+      <small style="color:#94a3b8;">Unique identifier for this device (cannot be changed)</small>
+    </div>
+
+    <div class="form-group">
+      <label>Device Name *</label>
+      <input type="text" id="deviceName" placeholder="e.g., Office ESP32, Laboratory Monitor" required>
+    </div>
+
+    <div class="form-group">
+      <label>Location</label>
+      <input type="text" id="deviceLocation" placeholder="e.g., 3rd Floor, Building A">
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="deviceDescription" placeholder="Optional: Add notes about this device" rows="3"></textarea>
+    </div>
+
+    <div class="error-message-device" id="addDeviceError"></div>
+    <div class="success-message-device" id="addDeviceSuccess"></div>
+
+    <button onclick="registerDevice()" style="width:100%; padding:12px; font-weight:bold;">📝 Register Device</button>
+
+    <div class="info-box-device" id="setupInstructions" style="display:none; margin-top:20px;">
+      <h4>🔧 Step 2: Update Your ESP32 Code</h4>
+      <p>Update your ESP32 code with the following Device ID:</p>
+      <code id="instructionDeviceId" style="display:block; padding:8px; margin:5px 0;"></code>
+      
+      <p style="margin-top:15px;"><strong>Update line 13 in your ESP32 code:</strong></p>
+      <code id="instructionCode" style="display:block; padding:8px; margin:5px 0; word-break:break-all;">
+#define DEVICE_ID "your_device_id"
+      </code>
+
+      <p style="margin-top:15px; color:#facc15;">⚠️ Then upload the code to your ESP32 and restart it.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Device Modal -->
+<div id="editDeviceModal">
+  <header>
+    <h3>✏️ Edit Device</h3>
+    <button onclick="closeEditDeviceModal()" class="close-btn">✕ Close</button>
+  </header>
+  
+  <div class="device-form">
+    <div class="form-group">
+      <label>Device ID</label>
+      <input type="text" id="editDeviceId" disabled>
+      <div class="info-text">ℹ️ Device ID cannot be changed after creation</div>
+    </div>
+
+    <div class="form-group">
+      <label>Device Name *</label>
+      <input type="text" id="editDeviceName" required>
+    </div>
+
+    <div class="form-group">
+      <label>Location</label>
+      <input type="text" id="editDeviceLocation">
+    </div>
+
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="editDeviceDescription" rows="3"></textarea>
+    </div>
+
+    <div class="error-message-device" id="editDeviceError"></div>
+    <div class="success-message-device" id="editDeviceSuccess"></div>
+
+    <div class="btn-group">
+      <button onclick="saveDeviceChanges()" style="flex:1; padding:12px; font-weight:bold;">💾 Save Changes</button>
+      <button class="btn-danger" onclick="closeEditDeviceModal()" style="flex:1; padding:12px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profileModal">
+  <header>
+    <h3>👤 User Profile</h3>
+    <button onclick="closeProfileModal()" class="close-btn">✕ Close</button>
+  </header>
+
+  <div class="profile-tabs">
+    <button class="profile-tab active" onclick="switchProfileTab('info')">ℹ️ Info</button>
+    <button class="profile-tab" onclick="switchProfileTab('security')">🔐 Security</button>
+  </div>
+
+  <div id="infoTab" class="tab-content active">
+    <div class="profile-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="profileUsername" disabled>
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="profileFullName">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="profileEmail">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="profilePhone">
+      </div>
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" id="profileDepartment">
+      </div>
+      <div class="form-group">
+        <label>Bio</label>
+        <textarea id="profileBio" rows="3"></textarea>
+      </div>
+      <div class="error-message" id="profileInfoError"></div>
+      <div class="success-message" id="profileInfoSuccess"></div>
+      <div class="btn-group">
+        <button onclick="saveProfile()">💾 Save Changes</button>
+        <button class="btn-danger" onclick="closeProfileModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="securityTab" class="tab-content">
+    <div class="profile-form">
+      <div class="info-box">
+        <h4>🔐 Change Credentials</h4>
+        <p>For security, you must verify your current credentials before making changes.</p>
+      </div>
+
+      <div style="border:2px solid #334155; padding:15px; border-radius:5px; margin-bottom:20px;">
+        <h4 style="margin-top:0; color:#facc15;">Verify Current Credentials</h4>
+        <div class="form-group">
+          <label>Current Username *</label>
+          <input type="text" id="currentUsername" placeholder="Enter your current username">
+        </div>
+        <div class="form-group">
+          <label>Current Password *</label>
+          <input type="password" id="currentPassword" placeholder="Enter your current password">
+        </div>
+        <button onclick="verifyCredentials()" style="width:100%; padding:10px; background:#22c55e;">✓ Verify</button>
+        <p id="verificationStatus" style="text-align:center; margin-top:10px; display:none;"></p>
+      </div>
+
+      <div id="changeCredentialsSection" style="display:none;">
+        <div style="border:2px solid #22c55e; padding:15px; border-radius:5px;">
+          <h4 style="margin-top:0; color:#22c55e;">✓ Credentials Verified - Update New Credentials</h4>
+          
+          <div class="form-group">
+            <label>New Username (optional)</label>
+            <input type="text" id="newUsername" placeholder="Leave blank to keep current username">
+            <small style="color:#94a3b8;">If blank, your current username will remain unchanged</small>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="form-group">
+            <label>New Password (optional)</label>
+            <input type="password" id="newPassword" placeholder="Leave blank to keep current password">
+            <small style="color:#94a3b8;">Minimum 6 characters. If blank, your current password will remain unchanged</small>
+          </div>
+
+          <div class="form-group">
+            <label>Confirm New Password</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm new password">
+            <small style="color:#94a3b8;">Must match the password above</small>
+          </div>
+
+          <div class="error-message" id="securityError"></div>
+          <div class="success-message" id="securitySuccess"></div>
+
+          <div class="btn-group">
+            <button onclick="updateCredentials()" style="flex:1; padding:12px; font-weight:bold; background:#22c55e;">💾 Update Credentials</button>
+            <button class="btn-danger" onclick="resetVerification()" style="flex:1; padding:12px;">↻ Start Over</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDp8pSXX5NuzEtiwFyxOlIm7SlwVxcuya4",
+  databaseURL: "https://campusnetsupport-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const alertedDevices = {};
+let latencyChart = null;
+let currentUser = null;
+let currentEditingDeviceId = null;
+let currentDeviceType = 'desktop';
+let credentialsVerified = false;
+let lastDeviceStatus = {};
+let lastDeviceInternet = {};
+let openTickets = {};
+let offlineCheckInterval = null;
+
+let problemState = {};
+
+const OFFLINE_TIMEOUT = 120000;
+const HIGH_LATENCY_THRESHOLD = 500;
+const LOW_RSSI_THRESHOLD = -80;
+
+// ========== DEVICE DETECTION ==========
+function detectDeviceType() {
+  const width = window.innerWidth;
+  let deviceType;
+
+  if (width <= 767) {
+    deviceType = 'phone';
+  } else if (width >= 768 && width <= 1024) {
+    deviceType = 'tablet';
+  } else {
+    deviceType = 'desktop';
+  }
+
+  currentDeviceType = deviceType;
+  updateDeviceIndicator();
+  return deviceType;
+}
+
+function updateDeviceIndicator() {
+  const indicator = document.getElementById('deviceIndicator');
+  const icons = {
+    phone: '📱',
+    tablet: '📱',
+    desktop: '🖥️'
+  };
+  
+  indicator.textContent = `${icons[currentDeviceType]} ${currentDeviceType.toUpperCase()}`;
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  detectDeviceType();
+  checkSessionAndAutoLogin();
+});
+
+window.addEventListener('resize', function() {
+  detectDeviceType();
+});
+
+function checkSessionAndAutoLogin() {
+  const savedUser = localStorage.getItem('currentUser');
+  if(savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showDashboard();
+  }
+}
+
+function login(){
+  let u = document.getElementById("user").value.trim();
+  let p = document.getElementById("pass").value;
+
+  if(!u || !p) {
+    alert("Please enter username and password");
+    return;
+  }
+
+  db.ref("users/"+u).once("value").then(s=>{
+    if(s.val() && s.val().password === p){
+      currentUser = {
+        username: u,
+        ...s.val()
+      };
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      showDashboard();
+    } else {
+      alert("Wrong username or password");
+    }
+  }).catch(err => {
+    console.error("Login error:", err);
+    alert("Login failed. Please try again.");
+  });
+}
+
+function showDashboard() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("addDeviceBtn").style.display = "inline-block";
+  document.getElementById("profileBtn").style.display = "inline-block";
+  document.getElementById("logoutBtn").style.display = "inline-block";
+  document.getElementById("user").value = "";
+  document.getElementById("pass").value = "";
+  loadDashboard();
+  loadTickets();
+  loadOpenTickets();
+  monitorDeviceStatus();
+  startOfflineCheck();
+}
+
+function logout() {
+  if(confirm("Are you sure you want to logout?")) {
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+    stopOfflineCheck();
+    document.getElementById("login").style.display = "block";
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("addDeviceBtn").style.display = "none";
+    document.getElementById("profileBtn").style.display = "none";
+    document.getElementById("logoutBtn").style.display = "none";
+    closeProfileModal();
+    closeAddDeviceModal();
+    closeEditDeviceModal();
+  }
+}
+
+function loadDashboard(){
+  db.ref("devices").on("value", snap=>{
+    let data = snap.val() || {};
+    let html = "";
+
+    for(let id in data){
+      let d = data[id];
+      const isOnline = d.internet;
+      const lastSeen = d.last_seen ? new Date(d.last_seen).toLocaleString() : "Never";
+      
+      let statusIndicator = "🟢 ONLINE";
+      let statusColor = "online";
+      
+      if (!isOnline) {
+        statusIndicator = "🔴 OFFLINE";
+        statusColor = "offline";
+      }
+      
+      html += `<div class="card">
+        <div class="card-menu">
+          <button onclick="openEditDeviceModal('${id}')" title="Edit device">✏️</button>
+        </div>
+        <h3>${d.deviceName || id}</h3>
+        <p style="font-size:12px; color:#94a3b8; margin:5px 0;">ID: ${id}</p>
+        ${d.deviceLocation ? `<p style="font-size:12px; color:#94a3b8; margin:5px 0;">📍 ${d.deviceLocation}</p>` : ''}
+        <p class="${statusColor}" style="margin:10px 0;">${statusIndicator}</p>
+        <p>Latency: <strong>${d.latency || 0}</strong> ms</p>
+        <p>RSSI: <strong>${d.rssi || 0}</strong> dBm</p>
+        <p style="font-size: 12px; color: #94a3b8;">Last seen: ${lastSeen}</p>
+        <button onclick="viewDetails('${id}')">📊 View Details</button>
+      </div>`;
+      
+      if(!isOnline && !alertedDevices[id]){
+        document.getElementById("alertSound").play();
+        alertedDevices[id]=true;
+      }
+      if(isOnline) alertedDevices[id]=false;
+    }
+    document.getElementById("devices").innerHTML = html || "<p style='text-align:center; grid-column: 1/-1;'>No devices found. Click 'Add Device' to register one.</p>";
+  });
+}
+
+function loadOpenTickets() {
+  db.ref("tickets").once("value").then(snap => {
+    let data = snap.val() || {};
+    openTickets = {};
+
+    for (let key in data) {
+      if (key === "lastTicketId") continue;
+      let ticket = data[key];
+
+      if (ticket.status === "OPEN") {
+        const ticketKey = `${ticket.deviceId}_${ticket.problemType}`;
+        openTickets[ticketKey] = key;
+        problemState[ticketKey] = true;
+      }
+    }
+  });
+}
+
+function startOfflineCheck() {
+  if (offlineCheckInterval) clearInterval(offlineCheckInterval);
+  
+  offlineCheckInterval = setInterval(() => {
+    db.ref("devices").once("value").then(snap => {
+      let data = snap.val() || {};
+      const now = Date.now();
+
+      for (let deviceId in data) {
+        let device = data[deviceId];
+        let lastSeen = device.last_seen || 0;
+        let timeSinceLastUpdate = now - lastSeen;
+        const stateKey = `${deviceId}_DEVICE_OFFLINE`;
+
+        if (timeSinceLastUpdate > OFFLINE_TIMEOUT && device.internet === true) {
+          if (!problemState[stateKey]) {
+            db.ref("devices/" + deviceId).update({
+              internet: false,
+              status: "no_response"
+            });
+
+            const ticketKey = `${deviceId}_DEVICE_OFFLINE`;
+            if (!openTickets[ticketKey]) {
+              createTicketForDevice(deviceId, "DEVICE_OFFLINE", `🔴 Device not responding for ${Math.round(timeSinceLastUpdate/1000)}s - Possible power loss or WiFi disconnect`);
+              problemState[stateKey] = true;
+            }
+          }
+        }
+      }
+    });
+  }, 5000);
+}
+
+function stopOfflineCheck() {
+  if (offlineCheckInterval) {
+    clearInterval(offlineCheckInterval);
+    offlineCheckInterval = null;
+  }
+}
+
+function monitorDeviceStatus() {
+  db.ref("devices").on("value", snap => {
+    let data = snap.val() || {};
+
+    for (let deviceId in data) {
+      let device = data[deviceId];
+      let wasOnline = lastDeviceStatus[deviceId];
+      let wasInternetWorking = lastDeviceInternet[deviceId];
+      let isOnline = device.internet;
+      let latency = device.latency || 0;
+      let rssi = device.rssi || 0;
+
+      if (wasOnline === undefined && isOnline === true) {
+        //
+      }
+
+      if (wasInternetWorking === true && isOnline === false) {
+        const stateKey = `${deviceId}_INTERNET_LOST`;
+        
+        if (!problemState[stateKey]) {
+          createTicketForDevice(deviceId, "INTERNET_LOST", `🌐 Device lost internet - ESP32 can reach WiFi but cannot ping 8.8.8.8`);
+          problemState[stateKey] = true;
+        }
+      }
+
+      const highLatencyKey = `${deviceId}_HIGH_LATENCY`;
+      
+      if (isOnline && latency > HIGH_LATENCY_THRESHOLD) {
+        if (!problemState[highLatencyKey]) {
+          createTicketForDevice(deviceId, "HIGH_LATENCY", `⏱️ High latency detected: ${latency}ms (threshold: ${HIGH_LATENCY_THRESHOLD}ms)`);
+          problemState[highLatencyKey] = true;
+        }
+      }
+
+      const lowRssiKey = `${deviceId}_LOW_RSSI`;
+      
+      if (isOnline && rssi < LOW_RSSI_THRESHOLD) {
+        if (!problemState[lowRssiKey]) {
+          createTicketForDevice(deviceId, "LOW_RSSI", `📡 Low WiFi signal: ${rssi}dBm (threshold: ${LOW_RSSI_THRESHOLD}dBm)`);
+          problemState[lowRssiKey] = true;
+        }
+      }
+
+      lastDeviceStatus[deviceId] = isOnline;
+      lastDeviceInternet[deviceId] = isOnline;
+    }
+  });
+}
+
+function createTicketForDevice(deviceId, problemType, description) {
+  const ticketKey = `${deviceId}_${problemType}`;
+  if (openTickets[ticketKey]) {
+    return;
+  }
+
+  db.ref("tickets/lastTicketId").once("value").then(snap => {
+    let lastId = snap.val() || 0;
+    let newTicketId = lastId + 1;
+
+    let key = deviceId + "_" + newTicketId;
+    let ticketData = {
+      ticketId: newTicketId,
+      deviceId: deviceId,
+      problemType: problemType,
+      description: description,
+      status: "OPEN",
+      createdAt: Date.now(),
+      fixedAt: null,
+      fixedBy: null
+    };
+
+    db.ref("tickets/" + key).set(ticketData).then(() => {
+      db.ref("tickets/lastTicketId").set(newTicketId);
+      openTickets[ticketKey] = key;
+      document.getElementById("alertSound").play();
+    }).catch(err => {
+      console.error("Error creating ticket:", err);
+    });
+  });
+}
+
+function manualCloseTicket(key, ticketId, deviceId) {
+  if(confirm(`Mark ticket #${ticketId} as fixed by ${currentUser.username}?`)) {
+    db.ref("tickets/" + key).update({
+      status: "FIXED",
+      fixedAt: Date.now(),
+      fixedBy: currentUser.username
+    }).then(() => {
+      db.ref("tickets/" + key).once("value").then(snap => {
+        let ticket = snap.val();
+        const ticketKey = `${ticket.deviceId}_${ticket.problemType}`;
+        delete openTickets[ticketKey];
+        problemState[ticketKey] = false;
+      });
+      alert(`✅ Ticket #${ticketId} has been marked as FIXED!`);
+      loadTickets();
+    }).catch(err => {
+      alert("❌ Error: " + err.message);
+    });
+  }
+}
+
+function loadTickets(){
+  db.ref("tickets").on("value", snap=>{
+    let data = snap.val() || {};
+    let generatedTickets = {};
+    let fixedTickets = {};
+    let openCount = 0;
+    let fixedCount = 0;
+    let problemTypes = new Set();
+    let affectedDevices = new Set();
+    let fixedByUsers = new Set();
+    let totalFixTime = 0;
+
+    // Organize tickets by ticket number
+    for(let key in data){
+      if(key === "lastTicketId") continue;
+
+      let ticket = data[key];
+      const ticketNumber = String(ticket.ticketId).padStart(7, '0'); // Format as 0000001
+      
+      if (ticket.status === "OPEN") {
+        if (!generatedTickets[ticketNumber]) {
+          generatedTickets[ticketNumber] = [];
+        }
+        generatedTickets[ticketNumber].push({key, ticket});
+        openCount++;
+        problemTypes.add(ticket.problemType);
+        affectedDevices.add(ticket.deviceId);
+      } else if (ticket.status === "FIXED") {
+        if (!fixedTickets[ticketNumber]) {
+          fixedTickets[ticketNumber] = [];
+        }
+        fixedTickets[ticketNumber].push({key, ticket});
+        fixedCount++;
+        fixedByUsers.add(ticket.fixedBy);
+        if (ticket.fixedAt && ticket.createdAt) {
+          totalFixTime += (ticket.fixedAt - ticket.createdAt) / (1000 * 60 * 60);
+        }
+      }
+    }
+
+    // Update stats
+    document.getElementById("openTicketCount").innerText = openCount;
+    document.getElementById("totalProblemCount").innerText = problemTypes.size;
+    document.getElementById("affectedDeviceCount").innerText = affectedDevices.size;
+
+    document.getElementById("fixedTicketCount").innerText = fixedCount;
+    document.getElementById("fixedByUserCount").innerText = fixedByUsers.size;
+    document.getElementById("avgFixTimeCount").innerText = fixedCount > 0 ? (totalFixTime / fixedCount).toFixed(1) : "0";
+
+    // Render generated tickets by category
+    renderTicketsByCategory(generatedTickets, "generatedTicketCategories", false);
+    
+    // Render fixed tickets by category
+    renderTicketsByCategory(fixedTickets, "fixedTicketCategories", true);
+  });
+}
+
+function renderTicketsByCategory(ticketsByNumber, containerId, isFixed) {
+  const container = document.getElementById(containerId);
+  const sortedNumbers = Object.keys(ticketsByNumber).sort();
+  
+  if (sortedNumbers.length === 0) {
+    container.innerHTML = `<p style='text-align:center; grid-column: 1/-1; padding:20px; color:#94a3b8;'>${isFixed ? 'No fixed tickets yet.' : 'No open tickets! 🎉'}</p>`;
+    return;
+  }
+
+  let html = "";
+
+  for (let ticketNumber of sortedNumbers) {
+    const tickets = ticketsByNumber[ticketNumber];
+    const ticketCount = tickets.length;
+    
+    html += `
+      <div class="ticket-category">
+        <div class="ticket-category-header" onclick="toggleTicketCategory(this)">
+          <div class="ticket-category-title">
+            <span>🎫 Ticket #${ticketNumber}</span>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <div class="ticket-category-count">${ticketCount} item${ticketCount !== 1 ? 's' : ''}</div>
+            <div class="ticket-category-toggle">▼</div>
+          </div>
+        </div>
+        <div class="ticket-category-content">
+    `;
+
+    for (let {key, ticket} of tickets) {
+      const createdDate = new Date(ticket.createdAt).toLocaleString();
+      const fixedDate = ticket.fixedAt ? new Date(ticket.fixedAt).toLocaleString() : "N/A";
+
+      html += `<div class="ticket-card ${isFixed ? 'fixed' : ''}">
+        <div class="ticket-id">🎫 Sub-Ticket #${ticket.ticketId}</div>
+        <div class="ticket-type">${getTicketTypeIcon(ticket.problemType)} ${ticket.problemType}</div>
+        <div class="ticket-device">📍 Device: <strong>${ticket.deviceId}</strong></div>
+        <p style="font-size:12px; color:#94a3b8; margin:5px 0; font-weight:bold;">${ticket.description}</p>
+        <div class="ticket-time">⏰ Created: ${createdDate}</div>
+        ${isFixed ? `<div class="ticket-time">✅ Fixed: ${fixedDate}${ticket.fixedBy ? ` (by ${ticket.fixedBy})` : ''}</div>` : ''}
+        <div class="ticket-status ${isFixed ? 'fixed' : 'open'}">
+          ${isFixed ? '✅ FIXED' : '⚠️ OPEN'}
+        </div>
+        ${!isFixed ? `<button class="btn-close-ticket" onclick="manualCloseTicket('${key}', ${ticket.ticketId}, '${ticket.deviceId}')">✓ Mark as Fixed</button>` : ''}
+      </div>`;
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+}
+
+function toggleTicketCategory(headerElement) {
+  headerElement.classList.toggle("expanded");
+  const content = headerElement.nextElementSibling;
+  content.classList.toggle("expanded");
+}
+
+function switchTicketTab(tab) {
+  document.getElementById('generatedTickets').classList.remove('active');
+  document.getElementById('fixedTickets').classList.remove('active');
+  
+  document.querySelectorAll('.ticket-tab').forEach(btn => btn.classList.remove('active'));
+  
+  if(tab === 'generated') {
+    document.getElementById('generatedTickets').classList.add('active');
+    document.querySelectorAll('.ticket-tab')[0].classList.add('active');
+  } else {
+    document.getElementById('fixedTickets').classList.add('active');
+    document.querySelectorAll('.ticket-tab')[1].classList.add('active');
+  }
+}
+
+function getTicketTypeIcon(type) {
+  const icons = {
+    "INTERNET_LOST": "🌐",
+    "HIGH_LATENCY": "⏱️",
+    "LOW_RSSI": "📡",
+    "CONNECTION_ERROR": "🔌",
+    "DEVICE_OFFLINE": "🔴"
+  };
+  return icons[type] || "⚠️";
+}
+
+function viewDetails(id){
+  const modal = document.getElementById("modal");
+  modal.classList.add("show");
+  document.getElementById("modalTitle").innerText = `📊 ${id} - Last 1 Hour`;
+
+  db.ref("devices/"+id+"/latency_history").once("value").then(snap=>{
+    const data = snap.val() || {};
+    const now = Date.now();
+    const oneHourAgo = now - 3600000;
+    const interval = 10000;
+    
+    const labels = [];
+    const values = [];
+
+    for(let t = oneHourAgo; t <= now; t += interval){
+      labels.push(new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}));
+      values.push(null);
+    }
+
+    Object.values(data).forEach(d=>{
+      const ts = Number(d.timestamp);
+      const lat = Number(d.latency);
+      
+      if(ts >= oneHourAgo && ts <= now){
+        const index = Math.floor((ts - oneHourAgo) / interval);
+        if(index >= 0 && index < values.length) {
+          values[index] = lat;
+        }
+      }
+    });
+
+    const validValues = values.filter(v => v !== null);
+    const avg = validValues.length > 0 ? validValues.reduce((a,b) => a+b, 0) / validValues.length : 0;
+    const min = validValues.length > 0 ? Math.min(...validValues) : 0;
+    const max = validValues.length > 0 ? Math.max(...validValues) : 0;
+    
+    document.getElementById("avgLatency").innerText = avg.toFixed(2);
+    document.getElementById("minLatency").innerText = min.toFixed(2);
+    document.getElementById("maxLatency").innerText = max.toFixed(2);
+    document.getElementById("dataPoints").innerText = validValues.length;
+
+    const avgLine = new Array(values.length).fill(avg);
+
+    if(latencyChart) latencyChart.destroy();
+    
+    const ctx = document.getElementById("chart").getContext("2d");
+    latencyChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          { 
+            label: "Latency (ms)", 
+            data: values, 
+            backgroundColor: "#3b82f6",
+            borderColor: "#2563eb",
+            borderWidth: 1
+          },
+          { 
+            label: "Average", 
+            data: avgLine, 
+            borderColor: "#facc15", 
+            backgroundColor: "rgba(250, 204, 21, 0.1)",
+            type: "line", 
+            fill: false, 
+            tension: 0.2,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        scales: { 
+          y: { 
+            beginAtZero: true,
+            title: { display: true, text: 'Latency (ms)' }
+          }
+        }
+      }
+    });
+  });
+}
+
+function closeModal(){ 
+  document.getElementById("modal").classList.remove("show");
+}
+
+function openAddDeviceModal() {
+  document.getElementById("addDeviceModal").classList.add("show");
+  document.getElementById("setupInstructions").style.display = "none";
+  document.getElementById("addDeviceError").style.display = "none";
+  document.getElementById("addDeviceSuccess").style.display = "none";
+  clearAddDeviceForm();
+}
+
+function closeAddDeviceModal() {
+  document.getElementById("addDeviceModal").classList.remove("show");
+}
+
+function clearAddDeviceForm() {
+  document.getElementById("deviceId").value = "";
+  document.getElementById("deviceName").value = "";
+  document.getElementById("deviceLocation").value = "";
+  document.getElementById("deviceDescription").value = "";
+  document.getElementById("deviceId").disabled = false;
+  document.getElementById("deviceName").disabled = false;
+  document.getElementById("deviceLocation").disabled = false;
+  document.getElementById("deviceDescription").disabled = false;
+  document.querySelector('#addDeviceModal button[onclick="registerDevice()"]').disabled = false;
+}
+
+function registerDevice() {
+  const deviceId = document.getElementById("deviceId").value.trim();
+  const deviceName = document.getElementById("deviceName").value.trim();
+  const deviceLocation = document.getElementById("deviceLocation").value.trim();
+  const deviceDescription = document.getElementById("deviceDescription").value.trim();
+  const errorDiv = document.getElementById("addDeviceError");
+  const successDiv = document.getElementById("addDeviceSuccess");
+
+  errorDiv.style.display = "none";
+  successDiv.style.display = "none";
+
+  if(!deviceId) {
+    errorDiv.innerText = "❌ Device ID is required";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  if(!deviceName) {
+    errorDiv.innerText = "❌ Device Name is required";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  db.ref("devices/" + deviceId).once("value").then(snap => {
+    if(snap.exists()) {
+      errorDiv.innerText = "❌ Device ID already exists. Please choose a different ID.";
+      errorDiv.style.display = "block";
+      return;
+    }
+
+    const deviceData = {
+      deviceName: deviceName,
+      deviceLocation: deviceLocation,
+      deviceDescription: deviceDescription,
+      internet: false,
+      latency: 0,
+      rssi: 0,
+      last_seen: 0,
+      createdBy: currentUser.username,
+      createdAt: Date.now(),
+      status: "awaiting_connection"
+    };
+
+    db.ref("devices/" + deviceId).set(deviceData).then(() => {
+      successDiv.innerText = "✅ Device registered successfully! Now update your ESP32 code with the Device ID below.";
+      successDiv.style.display = "block";
+
+      document.getElementById("setupInstructions").style.display = "block";
+      document.getElementById("instructionDeviceId").innerText = deviceId;
+      document.getElementById("instructionCode").innerText = `#define DEVICE_ID "${deviceId}"`;
+
+      document.getElementById("deviceId").disabled = true;
+      document.getElementById("deviceName").disabled = true;
+      document.getElementById("deviceLocation").disabled = true;
+      document.getElementById("deviceDescription").disabled = true;
+      document.querySelector('#addDeviceModal button[onclick="registerDevice()"]').disabled = true;
+
+      setTimeout(() => {
+        document.getElementById("setupInstructions").scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+
+    }).catch(err => {
+      errorDiv.innerText = "❌ Error registering device: " + err.message;
+      errorDiv.style.display = "block";
+    });
+  });
+}
+
+function openEditDeviceModal(deviceId) {
+  currentEditingDeviceId = deviceId;
+  document.getElementById("editDeviceModal").classList.add("show");
+  document.getElementById("editDeviceError").style.display = "none";
+  document.getElementById("editDeviceSuccess").style.display = "none";
+
+  db.ref("devices/" + deviceId).once("value").then(snap => {
+    const data = snap.val();
+    if(data) {
+      document.getElementById("editDeviceId").value = deviceId;
+      document.getElementById("editDeviceName").value = data.deviceName || "";
+      document.getElementById("editDeviceLocation").value = data.deviceLocation || "";
+      document.getElementById("editDeviceDescription").value = data.deviceDescription || "";
+    }
+  });
+}
+
+function closeEditDeviceModal() {
+  document.getElementById("editDeviceModal").classList.remove("show");
+  currentEditingDeviceId = null;
+}
+
+function saveDeviceChanges() {
+  const deviceName = document.getElementById("editDeviceName").value.trim();
+  const deviceLocation = document.getElementById("editDeviceLocation").value.trim();
+  const deviceDescription = document.getElementById("editDeviceDescription").value.trim();
+  const errorDiv = document.getElementById("editDeviceError");
+  const successDiv = document.getElementById("editDeviceSuccess");
+
+  errorDiv.style.display = "none";
+  successDiv.style.display = "none";
+
+  if(!deviceName) {
+    errorDiv.innerText = "❌ Device Name is required";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  db.ref("devices/" + currentEditingDeviceId).update({
+    deviceName: deviceName,
+    deviceLocation: deviceLocation,
+    deviceDescription: deviceDescription
+  }).then(() => {
+    successDiv.innerText = "✅ Device information updated successfully!";
+    successDiv.style.display = "block";
+
+    setTimeout(() => {
+      closeEditDeviceModal();
+    }, 1500);
+  }).catch(err => {
+    errorDiv.innerText = "❌ Error updating device: " + err.message;
+    errorDiv.style.display = "block";
+  });
+}
+
+function switchProfileTab(tab) {
+  document.getElementById('infoTab').classList.remove('active');
+  document.getElementById('securityTab').classList.remove('active');
+  
+  document.querySelectorAll('.profile-tab').forEach(btn => btn.classList.remove('active'));
+  
+  if(tab === 'info') {
+    document.getElementById('infoTab').classList.add('active');
+    document.querySelectorAll('.profile-tab')[0].classList.add('active');
+  } else {
+    document.getElementById('securityTab').classList.add('active');
+    document.querySelectorAll('.profile-tab')[1].classList.add('active');
+  }
+}
+
+function openProfileModal() {
+  if(!currentUser) {
+    alert("No user logged in");
+    return;
+  }
+  
+  document.getElementById("profileModal").classList.add("show");
+  
+  switchProfileTab('info');
+  credentialsVerified = false;
+  document.getElementById("changeCredentialsSection").style.display = "none";
+  document.getElementById("verificationStatus").style.display = "none";
+  document.getElementById("currentUsername").value = "";
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newUsername").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("profileInfoError").style.display = "none";
+  document.getElementById("profileInfoSuccess").style.display = "none";
+  document.getElementById("securityError").style.display = "none";
+  document.getElementById("securitySuccess").style.display = "none";
+  
+  document.getElementById("profileUsername").value = currentUser.username;
+  document.getElementById("profileFullName").value = currentUser.fullName || "";
+  document.getElementById("profileEmail").value = currentUser.email || "";
+  document.getElementById("profilePhone").value = currentUser.phone || "";
+  document.getElementById("profileDepartment").value = currentUser.department || "";
+  document.getElementById("profileBio").value = currentUser.bio || "";
+}
+
+function closeProfileModal() {
+  document.getElementById("profileModal").classList.remove("show");
+}
+
+function saveProfile() {
+  const fullName = document.getElementById("profileFullName").value;
+  const email = document.getElementById("profileEmail").value;
+  const phone = document.getElementById("profilePhone").value;
+  const department = document.getElementById("profileDepartment").value;
+  const bio = document.getElementById("profileBio").value;
+  const errorDiv = document.getElementById("profileInfoError");
+  const successDiv = document.getElementById("profileInfoSuccess");
+
+  errorDiv.style.display = "none";
+  successDiv.style.display = "none";
+
+  db.ref("users/" + currentUser.username).update({
+    fullName: fullName,
+    email: email,
+    phone: phone,
+    department: department,
+    bio: bio
+  }).then(() => {
+    currentUser.fullName = fullName;
+    currentUser.email = email;
+    currentUser.phone = phone;
+    currentUser.department = department;
+    currentUser.bio = bio;
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    successDiv.innerText = "✅ Profile updated successfully!";
+    successDiv.style.display = "block";
+  }).catch(err => {
+    console.error("Error updating profile:", err);
+    errorDiv.innerText = "❌ Failed to update profile. Please try again.";
+    errorDiv.style.display = "block";
+  });
+}
+
+function verifyCredentials() {
+  const username = document.getElementById("currentUsername").value.trim();
+  const password = document.getElementById("currentPassword").value;
+  const statusDiv = document.getElementById("verificationStatus");
+
+  if(!username || !password) {
+    statusDiv.style.display = "block";
+    statusDiv.style.color = "#fca5a5";
+    statusDiv.innerText = "❌ Please enter both username and password";
+    return;
+  }
+
+  db.ref("users/" + username).once("value").then(snap => {
+    if(snap.val() && snap.val().password === password && username === currentUser.username) {
+      credentialsVerified = true;
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#22c55e";
+      statusDiv.innerText = "✅ Credentials verified successfully!";
+      
+      setTimeout(() => {
+        document.getElementById("changeCredentialsSection").style.display = "block";
+        document.getElementById("changeCredentialsSection").scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    } else {
+      credentialsVerified = false;
+      statusDiv.style.display = "block";
+      statusDiv.style.color = "#fca5a5";
+      statusDiv.innerText = "❌ Incorrect username or password";
+    }
+  }).catch(err => {
+    credentialsVerified = false;
+    statusDiv.style.display = "block";
+    statusDiv.style.color = "#fca5a5";
+    statusDiv.innerText = "❌ Error verifying credentials";
+  });
+}
+
+function updateCredentials() {
+  if(!credentialsVerified) {
+    alert("❌ Please verify your current credentials first");
+    return;
+  }
+
+  const newUsername = document.getElementById("newUsername").value.trim();
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const errorDiv = document.getElementById("securityError");
+  const successDiv = document.getElementById("securitySuccess");
+
+  errorDiv.style.display = "none";
+  successDiv.style.display = "none";
+
+  if(!newUsername && !newPassword) {
+    errorDiv.innerText = "❌ Please enter at least a new username or password";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  if(newPassword && newPassword.length < 6) {
+    errorDiv.innerText = "❌ Password must be at least 6 characters long";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  if(newPassword && newPassword !== confirmPassword) {
+    errorDiv.innerText = "❌ Passwords do not match";
+    errorDiv.style.display = "block";
+    return;
+  }
+
+  if(newUsername && newUsername !== currentUser.username) {
+    db.ref("users/" + newUsername).once("value").then(snap => {
+      if(snap.exists()) {
+        errorDiv.innerText = "❌ Username already exists. Please choose a different username.";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      performCredentialUpdate(newUsername, newPassword);
+    });
+  } else {
+    performCredentialUpdate(null, newPassword);
+  }
+}
+
+function performCredentialUpdate(newUsername, newPassword) {
+  const errorDiv = document.getElementById("securityError");
+  const successDiv = document.getElementById("securitySuccess");
+  const oldUsername = currentUser.username;
+
+  let updatePromises = [];
+
+  if(newPassword) {
+    updatePromises.push(
+      db.ref("users/" + oldUsername).update({ password: newPassword })
+    );
+  }
+
+  if(newUsername && newUsername !== oldUsername) {
+    const userData = { ...currentUser };
+    userData.password = newPassword || currentUser.password;
+    delete userData.username;
+
+    updatePromises.push(
+      db.ref("users/" + newUsername).set(userData).then(() => {
+        return db.ref("users/" + oldUsername).remove();
+      })
+    );
+  }
+
+  Promise.all(updatePromises).then(() => {
+    if(newUsername && newUsername !== oldUsername) {
+      currentUser.username = newUsername;
+    }
+    if(newPassword) {
+      currentUser.password = newPassword;
+    }
+    
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    successDiv.innerText = "✅ Credentials updated successfully! You will be logged out for security.";
+    successDiv.style.display = "block";
+
+    setTimeout(() => {
+      logout();
+    }, 2000);
+  }).catch(err => {
+    console.error("Error updating credentials:", err);
+    errorDiv.innerText = "❌ Error updating credentials: " + err.message;
+    errorDiv.style.display = "block";
+  });
+}
+
+function resetVerification() {
+  credentialsVerified = false;
+  document.getElementById("changeCredentialsSection").style.display = "none";
+  document.getElementById("verificationStatus").style.display = "none";
+  document.getElementById("currentUsername").value = "";
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newUsername").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("securityError").style.display = "none";
+  document.getElementById("securitySuccess").style.display = "none";
+}
+
+window.onclick = function(event) {
+  const modal = document.getElementById("modal");
+  const profileModal = document.getElementById("profileModal");
+  const addDeviceModal = document.getElementById("addDeviceModal");
+  const editDeviceModal = document.getElementById("editDeviceModal");
+  
+  if(event.target === modal) {
+    closeModal();
+  }
+  if(event.target === profileModal) {
+    closeProfileModal();
+  }
+  if(event.target === addDeviceModal) {
+    closeAddDeviceModal();
+  }
+  if(event.target === editDeviceModal) {
+    closeEditDeviceModal();
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{ "devices": { "esp32_1": { "device": "esp32_1", "internet": true, "latency": 0, "rssi": -60, "last_seen": 0, "status": "online", "latency_history": { "entry_1": { "timestamp": 0, "latency": 0 } } } } }
